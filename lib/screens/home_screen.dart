@@ -50,8 +50,9 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 const MascotWidget(
-                  imageAsset: 'assets/images/mascot.png',
+                  imageAsset: 'assets/images/logo-baraeam.png',
                   message: 'أهلاً بك! هيا نتعلم شيئًا جميلًا اليوم 🌟',
+                  size: 96,
                 ),
                 const SizedBox(height: 8),
                 Column(
