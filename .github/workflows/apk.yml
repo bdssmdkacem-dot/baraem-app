@@ -1,0 +1,79 @@
+name: Baraem APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baraem-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: stable
+          cache: true
+
+      - name: Verify project assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f assets/images/baraem_logo.png ]]; then
+            echo "LOGO=assets/images/baraem_logo.png" >> "$GITHUB_ENV"
+          elif [[ -f assets/images/logo-baraeam.png ]]; then
+            echo "LOGO=assets/images/logo-baraeam.png" >> "$GITHUB_ENV"
+          else
+            echo "Baraem logo not found"
+            exit 1
+          fi
+          test -d assets/audio/adkar
+          test -d assets/audio/stories
+
+      - name: Generate Android project
+        run: flutter create --platforms=android --org=com.baraem --project-name=baraem .
+
+      - name: Install Baraem launcher icon
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android/app/src/main/res/drawable
+          cp "$LOGO" android/app/src/main/res/drawable/baraem_logo.png
+          sed -i 's#@mipmap/ic_launcher#@drawable/baraem_logo#g' android/app/src/main/AndroidManifest.xml
+          sed -i 's#@mipmap/ic_launcher#@drawable/baraem_logo#g' android/app/src/debug/AndroidManifest.xml || true
+          sed -i 's#@mipmap/ic_launcher#@drawable/baraem_logo#g' android/app/src/profile/AndroidManifest.xml || true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Analyze Dart code
+        run: flutter analyze
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: baraem-release
+          if-no-files-found: error
+          path: build/app/outputs/flutter-apk/app-release.apk
