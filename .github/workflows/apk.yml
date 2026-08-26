@@ -38,29 +38,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -f assets/images/baraem_logo.png ]]; then
-            echo "LOGO=assets/images/baraem_logo.png" >> "$GITHUB_ENV"
-          elif [[ -f assets/images/logo-baraeam.png ]]; then
-            echo "LOGO=assets/images/logo-baraeam.png" >> "$GITHUB_ENV"
-          else
-            echo "Baraem logo not found"
-            exit 1
-          fi
+          test -f assets/images/baraem_logo.png || test -f assets/images/logo-baraeam.png
           test -d assets/audio/adkar
           test -d assets/audio/stories
 
       - name: Generate Android project
         run: flutter create --platforms=android --org=com.baraem --project-name=baraem .
 
-      - name: Install Baraem launcher icon
+      - name: Configure Android build
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p android/app/src/main/res/drawable
-          cp "$LOGO" android/app/src/main/res/drawable/baraem_logo.png
-          sed -i 's#@mipmap/ic_launcher#@drawable/baraem_logo#g' android/app/src/main/AndroidManifest.xml
-          sed -i 's#@mipmap/ic_launcher#@drawable/baraem_logo#g' android/app/src/debug/AndroidManifest.xml || true
-          sed -i 's#@mipmap/ic_launcher#@drawable/baraem_logo#g' android/app/src/profile/AndroidManifest.xml || true
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle.kts')
+          text = p.read_text()
+          if 'ndkVersion =' in text:
+              import re
+              text = re.sub(r'ndkVersion\s*=\s*[^\n]+', 'ndkVersion = "27.0.12077973"', text)
+          else:
+              marker = 'android {\n'
+              if marker not in text:
+                  raise SystemExit('android { block not found')
+              text = text.replace(marker, marker + '    ndkVersion = "27.0.12077973"\n', 1)
+          p.write_text(text)
+          PY
+
+          echo '--- android/app/build.gradle.kts ---'
+          grep -n 'ndkVersion' android/app/build.gradle.kts
 
       - name: Flutter pub get
         run: flutter pub get
