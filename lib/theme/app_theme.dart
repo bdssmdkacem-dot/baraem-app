@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
@@ -8,7 +9,6 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      fontFamily: 'BalooArabic',
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primaryMint,
@@ -19,12 +19,15 @@ class AppTheme {
       ),
     );
 
+    final arabicTextTheme = GoogleFonts.balooBhaijaan2TextTheme(
+      base.textTheme,
+    ).apply(
+      bodyColor: AppColors.textDark,
+      displayColor: AppColors.textDark,
+    );
+
     return base.copyWith(
-      textTheme: base.textTheme.apply(
-        fontFamily: 'BalooArabic',
-        bodyColor: AppColors.textDark,
-        displayColor: AppColors.textDark,
-      ),
+      textTheme: arabicTextTheme,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -39,8 +42,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'BalooArabic',
+          textStyle: GoogleFonts.balooBhaijaan2(
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
