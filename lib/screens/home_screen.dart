@@ -50,6 +50,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 const MascotWidget(
+                  imageAsset: 'assets/images/mascot.png',
                   message: 'أهلاً بك! هيا نتعلم شيئًا جميلًا اليوم 🌟',
                 ),
                 const SizedBox(height: 8),
