@@ -10,17 +10,11 @@ import 'providers/purchase_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // TODO: si tu gardes google_mobile_ads, initialise-le ici :
-  // await MobileAds.instance.initialize();
-
+  // Start Flutter UI first. Do not block the first frame on local storage,
+  // billing, ads, or any other optional service. This prevents a startup
+  // failure from leaving the user stuck on the native Flutter splash screen.
   final progressProvider = ProgressProvider();
-  await progressProvider.load();
-
-  // Branche le flow d'achat sur la progression : dès qu'un achat est
-  // confirmé (ou restauré), on débloque tout le contenu premium.
-  final purchaseProvider = PurchaseProvider()
-    ..onPremiumChanged = (isPremium) => progressProvider.setPremium(isPremium);
-  unawaited(purchaseProvider.init());
+  final purchaseProvider = PurchaseProvider();
 
   runApp(
     MultiProvider(
@@ -32,4 +26,33 @@ Future<void> main() async {
       child: const BaraemApp(),
     ),
   );
+
+  // Initialize non-critical services after the first frame. Each operation is
+  // isolated so a plugin/storage failure cannot prevent the app from opening.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_initializeServices(progressProvider, purchaseProvider));
+  });
+}
+
+Future<void> _initializeServices(
+  ProgressProvider progressProvider,
+  PurchaseProvider purchaseProvider,
+) async {
+  try {
+    await progressProvider.load();
+  } catch (error, stackTrace) {
+    debugPrint('Baraem: progress initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+
+  purchaseProvider.onPremiumChanged = (isPremium) {
+    unawaited(progressProvider.setPremium(isPremium));
+  };
+
+  try {
+    await purchaseProvider.init();
+  } catch (error, stackTrace) {
+    debugPrint('Baraem: purchase initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
