@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
 class ModuleCard extends StatelessWidget {
   final String title;
