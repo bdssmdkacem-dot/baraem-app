@@ -1,12 +1,15 @@
-name: Build Baraem test APK
+name: Build Baraem APK
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,20 +22,32 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android project
-        run: flutter create --platforms=android --org com.baraem --project-name baraem .
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
-      - name: Get dependencies
+      - name: Generate Android project
+        run: flutter create --platforms=android --org=com.baraem --project-name=baraem .
+
+      - name: Pin Gradle wrapper
+        working-directory: android
+        run: gradle wrapper --gradle-version 8.7
+
+      - name: Flutter pub get
         run: flutter pub get
 
-      - name: Analyze
-        run: flutter analyze
+      - name: Build release APK
+        run: flutter build apk --release
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Build release AAB
+        run: flutter build appbundle --release
 
-      - name: Upload test APK
+      - name: Upload installable APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: baraem-test-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: baraem-release
+          if-no-files-found: error
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
