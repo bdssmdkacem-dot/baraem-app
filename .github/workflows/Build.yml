@@ -5,15 +5,25 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: baraem-apk-main
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Verify Baraem logo
+        run: |
+          test -f assets/images/baraem_logo.png
+          file assets/images/baraem_logo.png
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -34,45 +44,26 @@ jobs:
         working-directory: android
         run: gradle wrapper --gradle-version 8.7
 
-      - name: Apply Baraem logo to Android launcher icon
-        shell: bash
-        run: |
-          set -e
-          test -f assets/images/baraem_logo.png
-          mkdir -p /tmp/baraem-icon
-          convert assets/images/baraem_logo.png -resize 1024x1024 -gravity center -background none -extent 1024x1024 /tmp/baraem-icon/ic_launcher.png
-
-          declare -A sizes=(
-            [mdpi]=48
-            [hdpi]=72
-            [xhdpi]=96
-            [xxhdpi]=144
-            [xxxhdpi]=192
-          )
-          for density in "${!sizes[@]}"; do
-            mkdir -p "android/app/src/main/res/mipmap-${density}"
-            convert /tmp/baraem-icon/ic_launcher.png -resize "${sizes[$density]}x${sizes[$density]}" "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
-            cp "android/app/src/main/res/mipmap-${density}/ic_launcher.png" "android/app/src/main/res/mipmap-${density}/ic_launcher_round.png"
-          done
-
-          # Use the supplied PNG directly instead of Flutter's default adaptive icon.
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-
       - name: Flutter pub get
         run: flutter pub get
+
+      - name: Install Baraem launcher icon
+        run: |
+          set -e
+          src="assets/images/baraem_logo.png"
+          for spec in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            density="${spec%%:*}"
+            size="${spec##*:}"
+            mkdir -p "android/app/src/main/res/mipmap-${density}"
+            magick "$src" -resize "${size}x${size}" -strip "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+          done
 
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Build release AAB
-        run: flutter build appbundle --release
-
-      - name: Upload installable APK and AAB
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
           name: baraem-release
           if-no-files-found: error
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/flutter-apk/app-release.apk
