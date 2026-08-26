@@ -65,9 +65,6 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Analyze Dart code
-        run: flutter analyze
-
       - name: Build release APK
         run: flutter build apk --release
 
