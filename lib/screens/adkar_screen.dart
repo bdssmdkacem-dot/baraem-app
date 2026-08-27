@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../data/adkar_data.dart';
+import '../data/adkar_icons.dart';
 import '../models/adkar_item.dart';
 import '../providers/audio_provider.dart';
 import '../providers/progress_provider.dart';
@@ -86,20 +87,41 @@ class _AdkarList extends StatelessWidget {
     final audio = context.watch<AudioProvider>();
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 14),
       itemBuilder: (context, index) {
         final item = items[index];
         final locked = item.isPremium && !progress.isPremium;
         final done = progress.isCompleted(item.id);
+        final iconAsset = adkarIconFor(item.id);
 
         return Card(
+          clipBehavior: Clip.antiAlias,
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (iconAsset != null) ...[
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(22),
+                      child: Image.asset(
+                        iconAsset,
+                        width: 112,
+                        height: 112,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (_, __, ___) => const SizedBox(
+                          width: 112,
+                          height: 112,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Text(
                   item.arabicText,
                   textAlign: TextAlign.center,
