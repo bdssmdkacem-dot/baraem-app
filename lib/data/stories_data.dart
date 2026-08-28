@@ -1,7 +1,8 @@
 import '../models/story_item.dart';
 
-/// ⚠️ Données d'exemple. Remplace les textes et images par ton contenu
-/// définitif (idéalement validé par une personne qualifiée en tarbiya).
+/// قصص الأنبياء ومراجع الصور والصوتيات.
+/// ملاحظة: AssetSource في AudioProvider يستخدم المسار داخل assets/audio
+/// بدون بادئة assets/، لذلك ملفات الصوت هنا تبدأ بـ audio/stories/.
 final List<StoryItem> stories = [
   const StoryItem(
     id: 'story_nuh',
